@@ -123,7 +123,6 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 	}
 	r.Header.Set("Content-Type", ContentType)
 	r.Header.Set("Accept", ContentType)
-	r.Header.Set("Transfer-Encoding", "chunked")
 	// We don't need to send the body content if the server will reject it, so we can notify that expect-continue is supported.
 	r.Header.Set("Expect", "100-continue")
 	for _, editor := range o.reqEditors {

@@ -46,7 +46,25 @@ $ curl -k -v -X PUT https://localhost:8080/example -d '{"event":"sync","data":"Q
 ...
 ```
 
-Until I decide to hang up the connection with Ctrl-C.
+Until I decide to hang up the connection with Ctrl-C. And this works perfectly fine with HTTP1.1 too:
+
+```
+$ curl -k -i -X PUT https://localhost:8080/example -d '{"event":"sync","data":"QgAAAQAAAA=="}' -H 'Content-Type: application/x-ndjson' --http1.1
+HTTP/1.1 200 OK
+Content-Type: application/x-ndjson; charset=utf-8
+Date: Sat, 26 Oct 2024 11:32:52 GMT
+Transfer-Encoding: chunked
+
+{"event":"sync","data":"QgFbkqa2LT<snip>9CqZQD6wA="}
+{"event":"sync","data":"QgEVJTDZHR<snip>F/AH+BAQ=="}
+{"event":"sync","data":"QgG3qWH1RH<snip>8BfwB/ggE="}
+...
+```
+
+## FAQ: Why do the examples use HTTPS, do I need to use HTTPS?
+
+The examples include an HTTP2 client, so the server is has a self-signed certificate so that it can present HTTP2 over HTTPS.
+The client can still use HTTP1.
 
 ## Dependencies
 

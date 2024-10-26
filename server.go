@@ -66,7 +66,6 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 
 	log.InfoContext(ctx, "sending http sync response", slog.String("proto", req.Proto), slog.String("target", fmt.Sprintf("%s %s", req.Method, req.URL)), slog.Int("status", http.StatusOK))
 	rw.Header().Set("Content-Type", ContentType)
-	rw.Header().Set("Transfer-Encoding", "chunked")
 	rw.WriteHeader(http.StatusOK)
 	// Flush the header, this should ensure the client can begin reacting to our sync messages while still producing the body content.
 	if v, ok := rw.(http.Flusher); ok {
@@ -94,6 +93,8 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 			// should stop the writer from producing messages and lead to closing the response.
 			if req.Context().Err() != nil {
 				log.DebugContext(ctx, "client context closed")
+			} else if errors.Is(err, http.ErrBodyReadAfterClose) {
+				log.DebugContext(ctx, "read after close")
 			} else {
 				finalErr = err
 				cancel()
