@@ -63,8 +63,8 @@ Transfer-Encoding: chunked
 
 ## FAQ: Why do the examples use HTTPS, do I need to use HTTPS?
 
-The examples include an HTTP2 client, so the server is has a self-signed certificate so that it can present HTTP2 over HTTPS.
-The client can still use HTTP1.
+The examples include an HTTP2 client, so the server has a self-signed certificate so that it can present HTTP2 over HTTPS.
+The client can still use HTTP1.1 as seen in the curl example above or the http1follower example.
 
 ## Dependencies
 

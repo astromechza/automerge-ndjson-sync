@@ -139,7 +139,7 @@ func TestHttpPushPullChanges(t *testing.T) {
 			assertEqual(t, request.URL.String(), "https://localhost")
 			assertEqual(t, request.Header, map[string][]string{
 				"Accept":       {ContentType},
-				"Content-Type": {ContentType},
+				"Content-Type": {ContentTypeWithCharset},
 				"Expect":       {"100-continue"},
 			})
 

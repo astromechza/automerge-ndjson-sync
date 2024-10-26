@@ -121,7 +121,7 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 	if err != nil {
 		return fmt.Errorf("failed to setup request: %w", err)
 	}
-	r.Header.Set("Content-Type", ContentType)
+	r.Header.Set("Content-Type", ContentTypeWithCharset)
 	r.Header.Set("Accept", ContentType)
 	// We don't need to send the body content if the server will reject it, so we can notify that expect-continue is supported.
 	r.Header.Set("Expect", "100-continue")
@@ -154,6 +154,10 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 			log.ErrorContext(ctx, "failed to close response body", slog.Any("err", err))
 		}
 	}()
+
+	if v := res.Header.Get("Content-Type"); v != "" && isNotSuitableContentType(v) {
+		return fmt.Errorf("http request returned a response with an unsuitable content type %s", v)
+	}
 
 	if _, err := b.consumeMessagesFromReader(ctx, o.state, res.Body, o.terminationCheck); err != nil {
 		return err

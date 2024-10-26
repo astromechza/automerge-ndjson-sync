@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"mime"
 	"net/http"
 	"sync"
 
@@ -50,10 +51,27 @@ func WithServerSyncState(state *automerge.SyncState) ServerOption {
 	}
 }
 
+func isNotSuitableContentType(in string) bool {
+	mt, p, err := mime.ParseMediaType(in)
+	log.Info(fmt.Sprintf("%v %v %v", mt, p, err))
+	return err != nil || mt != ContentType || (p["charset"] != "" && p["charset"] != "utf-8")
+}
+
 func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts ...ServerOption) (finalErr error) {
 	options := newServerOptions(opts...)
 	if options.state == nil {
 		options.state = automerge.NewSyncState(b.Doc())
+	}
+
+	// If there is an accept header, then ensure it's compatible.
+	if v := req.Header.Get("Accept"); v != "" && isNotSuitableContentType(v) {
+		rw.WriteHeader(http.StatusNotAcceptable)
+		return nil
+	}
+	// If there is a content-type header, then ensure it's what we expect
+	if v := req.Header.Get("Content-Type"); v != "" && isNotSuitableContentType(v) {
+		rw.WriteHeader(http.StatusUnsupportedMediaType)
+		return nil
 	}
 
 	ctx := req.Context()
@@ -65,7 +83,8 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	}
 
 	log.InfoContext(ctx, "sending http sync response", slog.String("proto", req.Proto), slog.String("target", fmt.Sprintf("%s %s", req.Method, req.URL)), slog.Int("status", http.StatusOK))
-	rw.Header().Set("Content-Type", ContentType)
+	rw.Header().Set("Content-Type", ContentTypeWithCharset)
+	rw.Header().Set("X-Content-Type-Options", "nosniff")
 	rw.WriteHeader(http.StatusOK)
 	// Flush the header, this should ensure the client can begin reacting to our sync messages while still producing the body content.
 	if v, ok := rw.(http.Flusher); ok {
