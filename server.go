@@ -2,6 +2,7 @@ package automergendjsonsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -10,16 +11,21 @@ import (
 	"github.com/automerge/automerge-go"
 )
 
+// SharedDoc encapsulates a doc with a signalling mechanism that broadcasts an event when new messages changes have
+// been synced into the doc. This event is generally used to wake up other goroutines for generating sync messages to
+// other clients or servers but can also be used to driver other mechanisms like backups or transformers.
 type SharedDoc struct {
 	doc      *automerge.Doc
 	mutex    sync.Mutex
 	channels []chan bool
 }
 
+// NewSharedDoc returns a new SharedDoc
 func NewSharedDoc(doc *automerge.Doc) *SharedDoc {
 	return &SharedDoc{doc: doc}
 }
 
+// Doc returns the document held by this SharedDoc.
 func (b *SharedDoc) Doc() *automerge.Doc {
 	return b.doc
 }
@@ -30,6 +36,14 @@ type serverOptions struct {
 
 type ServerOption func(*serverOptions)
 
+func newServerOptions(opts ...ServerOption) *serverOptions {
+	options := &serverOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
+
 func WithServerSyncState(state *automerge.SyncState) ServerOption {
 	return func(o *serverOptions) {
 		o.state = state
@@ -37,10 +51,7 @@ func WithServerSyncState(state *automerge.SyncState) ServerOption {
 }
 
 func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts ...ServerOption) (finalErr error) {
-	options := &serverOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := newServerOptions(opts...)
 	if options.state == nil {
 		options.state = automerge.NewSyncState(b.Doc())
 	}
@@ -69,7 +80,7 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	sub, fin := b.subscribeToReceivedChanges()
 	defer fin()
 
-	// We piggy back on the context and ensure we cancel it before waiting for the wait group.
+	// We piggyback on the context and ensure we cancel it before waiting for the wait group.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -78,22 +89,31 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	go func() {
 		defer wg.Done()
 		if received, err := b.consumeMessagesFromReader(ctx, options.state, req.Body, NoTerminationCheck); err != nil {
-			if req.Context().Err() == nil {
+			// If we've finished and the request context is closed (indicating that the client disconnected), then this
+			// isn't really an error. For anything else, set the final error and cancel the context. The cancellation
+			// should stop the writer from producing messages and lead to closing the response.
+			if req.Context().Err() != nil {
+				log.DebugContext(ctx, "client context closed")
+			} else {
 				finalErr = err
 				cancel()
 			}
 		} else if received == 0 {
+			// It's bad if the request reached EOF without any sync messages since our writer can't really do anything
+			// in response. So we set an error and cancel.
 			finalErr = fmt.Errorf("request closed with no messages received")
 			cancel()
 		}
 	}()
 
 	log.DebugContext(ctx, "writing messages to response body")
-	if err := generateMessagesToWriter(ctx, options.state, sub, rw, false); err != nil && req.Context().Err() == nil {
-		if finalErr != nil {
-			return finalErr
+	if err := generateMessagesToWriter(ctx, options.state, sub, rw, false); err != nil {
+		// If we close and the request context is closed then there's no particular error unless finalErr has been set
+		// from the reading routine.
+		if ctx.Err() != nil {
+			return
 		}
-		return err
+		return errors.Join(err, finalErr)
 	}
-	return finalErr
+	return
 }
