@@ -11,10 +11,10 @@ import (
 	"github.com/automerge/automerge-go"
 )
 
-// NotifyPossibleChanges should be called after the shared doc has "received" a message. This allows any goroutines that
+// NotifyReceivedChanges should be called after the shared doc has "received" a message. This allows any goroutines that
 // are generating messages to be preempted and know that new messaged may be available. This is a broadcast because
 // any number of goroutines may be writing changes to the doc to their client.
-func (b *SharedDoc) NotifyPossibleChanges() {
+func (b *SharedDoc) NotifyReceivedChanges() {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	for _, channel := range b.channels {
@@ -44,7 +44,7 @@ func (b *SharedDoc) consumeMessagesFromReader(ctx context.Context, state *autome
 				received += 1
 				receivedChanges += len(m.Changes())
 				receivedBytes += len(sc.Bytes()) + 1
-				b.NotifyPossibleChanges()
+				b.NotifyReceivedChanges()
 
 				if terminationCheck(state.Doc, m) {
 					log.InfoContext(ctx, "termination check met")

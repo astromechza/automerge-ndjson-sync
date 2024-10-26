@@ -15,7 +15,7 @@ import (
 func TestNotifyPossibleChanges_no_subs(t *testing.T) {
 	t.Parallel()
 	a := NewSharedDoc(automerge.New())
-	a.NotifyPossibleChanges()
+	a.NotifyReceivedChanges()
 }
 
 func TestNotifyPossibleChanges_with_sub(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNotifyPossibleChanges_with_sub(t *testing.T) {
 	})
 
 	t.Run("message available after notify", func(t *testing.T) {
-		a.NotifyPossibleChanges()
+		a.NotifyReceivedChanges()
 
 		select {
 		case v := <-sub:
@@ -45,7 +45,7 @@ func TestNotifyPossibleChanges_with_sub(t *testing.T) {
 
 	t.Run("closer function close channel", func(t *testing.T) {
 		fin()
-		a.NotifyPossibleChanges()
+		a.NotifyReceivedChanges()
 		_, ok := <-sub
 		assertEqual(t, false, ok)
 	})

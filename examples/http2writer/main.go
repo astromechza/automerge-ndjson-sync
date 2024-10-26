@@ -44,7 +44,7 @@ func mainInner() error {
 			} else if _, err := doc.Commit("commit"); err != nil {
 				panic(err)
 			}
-			a.NotifyPossibleChanges()
+			a.NotifyReceivedChanges()
 		}
 	}()
 
