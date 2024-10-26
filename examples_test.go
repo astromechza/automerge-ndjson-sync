@@ -46,7 +46,7 @@ func Test_sync3(t *testing.T) {
 		// Each peer also has a starting doc that has some existing content.
 		peerDoc := NewSharedDoc(automerge.New())
 		peerDocs = append(peerDocs, peerDoc)
-		assertEqual(t, peerDoc.Doc().RootMap().Set(fmt.Sprintf("peer-%d", i), "b"), nil)
+		assertEqual(t, peerDoc.Doc().RootMap().Set(fmt.Sprintf("peer-%d", i), int64(i)), nil)
 		_, _ = peerDoc.Doc().Commit("change")
 		go func() {
 			defer wg.Done()
@@ -70,5 +70,9 @@ func Test_sync3(t *testing.T) {
 	t.Log(LoggableChangeHashes(peerDocs[1].Doc().Heads()).LogValue().String())
 	assertEqual(t, sd.Doc().Heads(), peerDocs[0].Doc().Heads())
 	assertEqual(t, sd.Doc().Heads(), peerDocs[1].Doc().Heads())
-	assertEqual(t, sd.Doc().RootMap().GoString(), `&automerge.Map{"a": "b", "peer-0": "b", "peer-1": "b"}`)
+	assertEqual(t, sd.Doc().RootMap().Len(), 3)
+	values, _ := sd.Doc().RootMap().Values()
+	assertEqual(t, values["a"].Str(), "b")
+	assertEqual(t, values["peer-0"].Int64(), 0)
+	assertEqual(t, values["peer-1"].Int64(), 1)
 }
