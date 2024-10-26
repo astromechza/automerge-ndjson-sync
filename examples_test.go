@@ -50,7 +50,7 @@ func Test_sync3(t *testing.T) {
 		_, _ = peerDoc.Doc().Commit("change")
 		go func() {
 			defer wg.Done()
-			if err := peerDoc.HttpPushPullChanges(context.Background(), "http://"+listener.Addr().String(), WithTerminationCheck(func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
+			if err := peerDoc.HttpPushPullChanges(context.Background(), "http://"+listener.Addr().String(), WithClientTerminationCheck(func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
 				return len(doc.Heads()) == 3
 			})); err != nil {
 				goErrors <- err

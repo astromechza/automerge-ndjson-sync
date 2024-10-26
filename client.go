@@ -81,6 +81,14 @@ type clientOptions struct {
 
 type ClientOption func(*clientOptions)
 
+func newClientOptions(opts ...ClientOption) *clientOptions {
+	options := &clientOptions{client: http.DefaultClient, terminationCheck: NoTerminationCheck}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
+
 func WithHttpClient(client HttpDoer) ClientOption {
 	return func(o *clientOptions) {
 		o.client = client
@@ -93,13 +101,13 @@ func WithClientSyncState(state *automerge.SyncState) ClientOption {
 	}
 }
 
-func WithTerminationCheck(check TerminationCheck) ClientOption {
+func WithClientTerminationCheck(check TerminationCheck) ClientOption {
 	return func(o *clientOptions) {
 		o.terminationCheck = check
 	}
 }
 
-func WithRequestEditor(f func(r *http.Request)) ClientOption {
+func WithClientRequestEditor(f func(r *http.Request)) ClientOption {
 	return func(o *clientOptions) {
 		o.reqEditors = append(o.reqEditors, f)
 	}
@@ -108,10 +116,7 @@ func WithRequestEditor(f func(r *http.Request)) ClientOption {
 // HttpPushPullChanges is the HTTP client function to synchronise a local document with a remote server. This uses either HTTP2 or HTTP1.1 depending on the
 // remote server - HTTP2 is preferred since it has better understood bidirectional body capabilities.
 func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ...ClientOption) error {
-	o := &clientOptions{client: http.DefaultClient, terminationCheck: NoTerminationCheck}
-	for _, opt := range opts {
-		opt(o)
-	}
+	o := newClientOptions(opts...)
 	if o.state == nil {
 		o.state = automerge.NewSyncState(b.Doc())
 	}

@@ -17,11 +17,14 @@ func TestServe_empty_request_body(t *testing.T) {
 	sd := NewSharedDoc(automerge.New())
 	rw := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, "/", nil)
-	assertErrorEqual(t, sd.ServeChanges(rw, req), "request closed with no messages received")
+	assertErrorEqual(t, sd.ServeChanges(rw, req, WithServerHeaderEditor(func(headers http.Header) {
+		headers.Set("Test-Header", "Test-Value")
+	}), WithServerSyncState(automerge.NewSyncState(sd.Doc()))), "request closed with no messages received")
 	assertEqual(t, rw.Result().StatusCode, http.StatusOK)
 	assertEqual(t, rw.Result().Header, map[string][]string{
 		"Content-Type":           {ContentTypeWithCharset},
 		"X-Content-Type-Options": {"nosniff"},
+		"Test-Header":            {"Test-Value"},
 	})
 	assertEqual(t, rw.Body.String(), "{\"event\":\"sync\",\"data\":\"QgAAAQAAAA==\"}\n")
 }

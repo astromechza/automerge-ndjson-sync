@@ -141,6 +141,7 @@ func TestHttpPushPullChanges(t *testing.T) {
 				"Accept":       {ContentType},
 				"Content-Type": {ContentTypeWithCharset},
 				"Expect":       {"100-continue"},
+				"Test-Header":  {"Test-Value"},
 			})
 
 			sc := bufio.NewScanner(request.Body)
@@ -151,7 +152,9 @@ func TestHttpPushPullChanges(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(strings.NewReader("")),
 			}, nil
-		}))), nil)
+		})), WithClientSyncState(automerge.NewSyncState(sd.Doc())), WithClientRequestEditor(func(r *http.Request) {
+			r.Header.Set("Test-Header", "Test-Value")
+		})), nil)
 	})
 
 	t.Run("read until check passes", func(t *testing.T) {
@@ -171,7 +174,7 @@ func TestHttpPushPullChanges(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body:       mg2,
 			}, nil
-		})), WithTerminationCheck(func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
+		})), WithClientTerminationCheck(func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
 			checkCalled = true
 			return true
 		})), nil)

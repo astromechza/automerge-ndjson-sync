@@ -32,7 +32,8 @@ func (b *SharedDoc) Doc() *automerge.Doc {
 }
 
 type serverOptions struct {
-	state *automerge.SyncState
+	state         *automerge.SyncState
+	headerEditors []func(rw http.Header)
 }
 
 type ServerOption func(*serverOptions)
@@ -48,6 +49,12 @@ func newServerOptions(opts ...ServerOption) *serverOptions {
 func WithServerSyncState(state *automerge.SyncState) ServerOption {
 	return func(o *serverOptions) {
 		o.state = state
+	}
+}
+
+func WithServerHeaderEditor(f func(headers http.Header)) ServerOption {
+	return func(o *serverOptions) {
+		o.headerEditors = append(o.headerEditors, f)
 	}
 }
 
@@ -85,7 +92,11 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	log.InfoContext(ctx, "sending http sync response", slog.String("proto", req.Proto), slog.String("target", fmt.Sprintf("%s %s", req.Method, req.URL)), slog.Int("status", http.StatusOK))
 	rw.Header().Set("Content-Type", ContentTypeWithCharset)
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
+	for _, he := range options.headerEditors {
+		he(rw.Header())
+	}
 	rw.WriteHeader(http.StatusOK)
+
 	// Flush the header, this should ensure the client can begin reacting to our sync messages while still producing the body content.
 	if v, ok := rw.(http.Flusher); ok {
 		v.Flush()

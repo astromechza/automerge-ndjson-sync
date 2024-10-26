@@ -51,5 +51,5 @@ func mainInner() error {
 		},
 	}
 
-	return a.HttpPushPullChanges(context.Background(), "https://localhost:8080/"+randomDocId, automergendjsonsync.WithHttpClient(hc), automergendjsonsync.WithTerminationCheck(automergendjsonsync.HeadsEqualCheck))
+	return a.HttpPushPullChanges(context.Background(), "https://localhost:8080/"+randomDocId, automergendjsonsync.WithHttpClient(hc), automergendjsonsync.WithClientTerminationCheck(automergendjsonsync.HeadsEqualCheck))
 }
