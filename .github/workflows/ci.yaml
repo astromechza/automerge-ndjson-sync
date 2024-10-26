@@ -1,0 +1,22 @@
+name: Ci
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: setup-test
+        run: go install gotest.tools/gotestsum@latest
+      - name: test
+        run: gotestsum --format github-actions
+      - name: lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest

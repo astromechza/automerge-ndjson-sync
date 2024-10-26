@@ -20,6 +20,7 @@ func (b *SharedDoc) NotifyPossibleChanges() {
 	for _, channel := range b.channels {
 		select {
 		case channel <- true:
+		default:
 		}
 	}
 }

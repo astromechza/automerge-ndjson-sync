@@ -2,6 +2,7 @@ package automergendjsonsync
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -18,9 +19,9 @@ func TestLog(t *testing.T) {
 			return a
 		},
 	})))
-	log.InfoContext(nil, "hello")
-	log.DebugContext(nil, "world")
+	log.InfoContext(context.TODO(), "hello")
+	log.DebugContext(context.TODO(), "world")
 	ResetLog()
-	log.InfoContext(nil, "other")
+	log.InfoContext(context.TODO(), "other")
 	assertEqual(t, buff.String(), "time=1970-01-01T01:00:00.000+01:00 level=INFO msg=hello\n")
 }
