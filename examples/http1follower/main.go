@@ -26,6 +26,9 @@ func mainInner() error {
 	automergendjsonsync.SetLog(slog.Default())
 
 	randomDocId := strconv.Itoa(rand.Int())
+	if v := os.Getenv("DOC_ID"); v != "" {
+		randomDocId = v
+	}
 	slog.Info("random doc id decided", slog.String("id", randomDocId))
 
 	doc := automerge.New()

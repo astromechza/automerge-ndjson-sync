@@ -111,6 +111,7 @@ func mainInner() error {
 	server := &http.Server{Addr: ":8080", Handler: mux, TLSConfig: &tls.Config{
 		Certificates: []tls.Certificate{*cert},
 	}}
+	slog.Default().Info("listening and serving")
 	return server.ListenAndServeTLS("", "")
 }
 
