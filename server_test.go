@@ -24,6 +24,7 @@ func TestServe_empty_request_body(t *testing.T) {
 	assertEqual(t, rw.Result().Header, map[string][]string{
 		"Content-Type":           {ContentTypeWithCharset},
 		"X-Content-Type-Options": {"nosniff"},
+		"Cache-Control":          {"no-store"},
 		"Test-Header":            {"Test-Value"},
 	})
 	assertEqual(t, rw.Body.String(), "{\"event\":\"sync\",\"data\":\"QgAAAQAAAA==\"}\n")
@@ -78,6 +79,7 @@ func TestServe_exchange(t *testing.T) {
 	assertEqual(t, rw.Result().Header, map[string][]string{
 		"Content-Type":           {ContentTypeWithCharset},
 		"X-Content-Type-Options": {"nosniff"},
+		"Cache-Control":          {"no-store"},
 	})
 	lines := strings.Split(strings.TrimSpace(rw.Body.String()), "\n")
 	assertEqual(t, len(lines), 2)

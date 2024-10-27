@@ -138,10 +138,11 @@ func TestHttpPushPullChanges(t *testing.T) {
 		assertEqual(t, sd.HttpPushPullChanges(context.Background(), "https://localhost", WithHttpClient(HttpDoerFunc(func(request *http.Request) (*http.Response, error) {
 			assertEqual(t, request.URL.String(), "https://localhost")
 			assertEqual(t, request.Header, map[string][]string{
-				"Accept":       {ContentType},
-				"Content-Type": {ContentTypeWithCharset},
-				"Expect":       {"100-continue"},
-				"Test-Header":  {"Test-Value"},
+				"Accept":        {ContentType},
+				"Content-Type":  {ContentTypeWithCharset},
+				"Cache-Control": {"no-store"},
+				"Expect":        {"100-continue"},
+				"Test-Header":   {"Test-Value"},
 			})
 
 			sc := bufio.NewScanner(request.Body)

@@ -13,6 +13,7 @@ This library is a utility library for synchronising [automerge](https://automerg
     1. The response body is closed after the server detects that the request body is complete and no more messages are available.
     2. The client sees a sync message that meets its "termination check", which may indicate that the server matches the local state or that the local state contains all the remote head nodes. This can be used for local tools that need to perform a "one-shot" synchronisation on startup.
 5. There's a broadcast capability that allows a server to serve changes from multiple clients on the same doc simultaneously or for a client to synchronise with multiple servers.
+6. The client supports HTTP redirect behavior so that servers can implement rudimentary partitioning and balancing of requests.
 
 This library will be used to build a series of small peer-to-peer and distributed state utilities built on Automerge. The protocol above is easy to replicate in most languages, most importantly Go (in this repo) and Javascript.
 
@@ -50,10 +51,10 @@ Until I decide to hang up the connection with Ctrl-C. And this works perfectly f
 
 ```
 $ curl -k -i -X PUT https://localhost:8080/example -d '{"event":"sync","data":"QgAAAQAAAA=="}' -H 'Content-Type: application/x-ndjson' --http1.1
-HTTP/1.1 200 OK
-Content-Type: application/x-ndjson; charset=utf-8
-Date: Sat, 26 Oct 2024 11:32:52 GMT
-Transfer-Encoding: chunked
+< HTTP/1.1 200 OK
+< Content-Type: application/x-ndjson; charset=utf-8
+< Date: Sat, 26 Oct 2024 11:32:52 GMT
+< Transfer-Encoding: chunked
 
 {"event":"sync","data":"QgFbkqa2LT<snip>9CqZQD6wA="}
 {"event":"sync","data":"QgEVJTDZHR<snip>F/AH+BAQ=="}

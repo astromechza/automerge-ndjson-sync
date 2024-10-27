@@ -92,6 +92,7 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	log.InfoContext(ctx, "sending http sync response", slog.String("proto", req.Proto), slog.String("target", fmt.Sprintf("%s %s", req.Method, req.URL)), slog.Int("status", http.StatusOK))
 	rw.Header().Set("Content-Type", ContentTypeWithCharset)
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
+	rw.Header().Set("Cache-Control", "no-store")
 	for _, he := range options.headerEditors {
 		he(rw.Header())
 	}

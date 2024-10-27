@@ -128,6 +128,7 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 	}
 	r.Header.Set("Content-Type", ContentTypeWithCharset)
 	r.Header.Set("Accept", ContentType)
+	r.Header.Set("Cache-Control", "no-store")
 	// We don't need to send the body content if the server will reject it, so we can notify that expect-continue is supported.
 	r.Header.Set("Expect", "100-continue")
 	for _, editor := range o.reqEditors {
@@ -145,6 +146,9 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 
 	// We use a special body generator that runs in a goroutine on demand in order to generate new messages.
 	r.Body = newMessageGenerator(ctx, o.state, sub, wg)
+	r.GetBody = func() (io.ReadCloser, error) {
+		return newMessageGenerator(ctx, o.state, sub, wg), nil
+	}
 
 	res, err := o.client.Do(r)
 	if err != nil {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 
@@ -75,4 +77,40 @@ func Test_sync3(t *testing.T) {
 	assertEqual(t, values["a"].Str(), "b")
 	assertEqual(t, values["peer-0"].Int64(), 0)
 	assertEqual(t, values["peer-1"].Int64(), 1)
+}
+
+// It's very useful to be able to load balance clients via HTTP redirect semantics.
+func TestExample_HttpRedirect(t *testing.T) {
+	t.Parallel()
+
+	SetLog(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+
+	// Create a starting server side doc that has some existing content.
+	sd := NewSharedDoc(automerge.New())
+	assertEqual(t, sd.Doc().RootMap().Set("a", "b"), nil)
+	_, _ = sd.Doc().Commit("change")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "/redirected")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	})
+	mux.HandleFunc("/redirected", func(w http.ResponseWriter, r *http.Request) {
+		if err := sd.ServeChanges(w, r); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	assertEqual(t, err, nil)
+	server := &http.Server{Handler: mux}
+	defer server.Close()
+	go func() {
+		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+
+	peerDoc := NewSharedDoc(automerge.New())
+	assertEqual(t, peerDoc.HttpPushPullChanges(context.Background(), "http://"+listener.Addr().String(), WithClientTerminationCheck(HasAllRemoteHeads)), nil)
 }
