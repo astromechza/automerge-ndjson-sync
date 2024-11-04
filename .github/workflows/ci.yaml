@@ -15,7 +15,7 @@ jobs:
       - name: setup-test
         run: go install gotest.tools/gotestsum@latest
       - name: test
-        run: gotestsum --format github-actions
+        run: gotestsum --format github-actions -- -race
       - name: lint
         uses: golangci/golangci-lint-action@v6
         with:
