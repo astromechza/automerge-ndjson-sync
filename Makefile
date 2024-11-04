@@ -22,7 +22,7 @@ help:
 ## Execute Go tests with gotestsum (go install gotest.tools/gotestsum@latest)
 .PHONY: test
 test:
-	gotestsum --format testname
+	gotestsum --format testname -- -race
 
 ## Lint Go code with golangci-lint (install this if you don't have it)
 .PHONY: lint

@@ -138,7 +138,7 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()
 
-	sub, fin := b.subscribeToReceivedChanges()
+	sub, fin := b.SubscribeToReceivedChanges()
 	defer fin()
 
 	ctx, cancel := context.WithCancel(ctx)

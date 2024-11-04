@@ -107,7 +107,7 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()
 
-	sub, fin := b.subscribeToReceivedChanges()
+	sub, fin := b.SubscribeToReceivedChanges()
 	defer fin()
 
 	// We piggyback on the context and ensure we cancel it before waiting for the wait group.

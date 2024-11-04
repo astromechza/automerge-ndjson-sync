@@ -12,7 +12,9 @@ import (
 	"github.com/automerge/automerge-go"
 )
 
-func (b *SharedDoc) subscribeToReceivedChanges() (chan bool, func()) {
+// SubscribeToReceivedChanges allows the caller to subscribe to changes received by the doc. Call the finish function
+// to clean up.
+func (b *SharedDoc) SubscribeToReceivedChanges() (chan bool, func()) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	if b.channels == nil {

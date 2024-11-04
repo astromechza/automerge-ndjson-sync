@@ -22,7 +22,7 @@ func TestNotifyPossibleChanges_with_sub(t *testing.T) {
 	t.Parallel()
 
 	a := NewSharedDoc(automerge.New())
-	sub, fin := a.subscribeToReceivedChanges()
+	sub, fin := a.SubscribeToReceivedChanges()
 
 	t.Run("no message available by default", func(t *testing.T) {
 		select {
