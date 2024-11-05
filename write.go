@@ -34,6 +34,7 @@ func (b *SharedDoc) SubscribeToReceivedChanges() (chan bool, func()) {
 }
 
 func generateMessagesToWriter(ctx context.Context, state *automerge.SyncState, hintChannel <-chan bool, writer io.Writer, immediate bool) error {
+	log := Logger(ctx)
 	sent, sentBytes, sentChanges := 0, 0, 0
 	defer func() {
 		log.InfoContext(ctx, "finished writing sync messages", slog.Int("sent-messages", sent), slog.Int("sent-changes", sentChanges), slog.Int("sent-bytes", sentBytes))

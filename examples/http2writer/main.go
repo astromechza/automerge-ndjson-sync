@@ -24,7 +24,6 @@ func main() {
 
 func mainInner() error {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
-	automergendjsonsync.SetLog(slog.Default())
 
 	randomDocId := strconv.Itoa(rand.Int())
 	if v := os.Getenv("DOC_ID"); v != "" {
@@ -57,5 +56,6 @@ func mainInner() error {
 		},
 	}
 
-	return a.HttpPushPullChanges(context.TODO(), "https://localhost:8080/"+randomDocId, automergendjsonsync.WithHttpClient(hc), automergendjsonsync.WithClientTerminationCheck(automergendjsonsync.NoTerminationCheck))
+	ctx := automergendjsonsync.SetContextLogger(context.TODO(), slog.Default())
+	return a.HttpPushPullChanges(ctx, "https://localhost:8080/"+randomDocId, automergendjsonsync.WithHttpClient(hc), automergendjsonsync.WithClientTerminationCheck(automergendjsonsync.NoTerminationCheck))
 }

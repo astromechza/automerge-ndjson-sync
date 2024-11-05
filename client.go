@@ -116,6 +116,7 @@ func WithClientRequestEditor(f func(r *http.Request)) ClientOption {
 // HttpPushPullChanges is the HTTP client function to synchronise a local document with a remote server. This uses either HTTP2 or HTTP1.1 depending on the
 // remote server - HTTP2 is preferred since it has better understood bidirectional body capabilities.
 func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ...ClientOption) error {
+	log := Logger(ctx)
 	o := newClientOptions(opts...)
 	if o.state == nil {
 		o.state = automerge.NewSyncState(b.Doc())

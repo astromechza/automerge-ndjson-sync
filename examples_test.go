@@ -83,7 +83,7 @@ func Test_sync3(t *testing.T) {
 func TestExample_HttpRedirect(t *testing.T) {
 	t.Parallel()
 
-	SetLog(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	ctx := SetContextLogger(context.Background(), slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 	// Create a starting server side doc that has some existing content.
 	sd := NewSharedDoc(automerge.New())
@@ -103,7 +103,9 @@ func TestExample_HttpRedirect(t *testing.T) {
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assertEqual(t, err, nil)
-	server := &http.Server{Handler: mux}
+	server := &http.Server{Handler: mux, BaseContext: func(listener net.Listener) context.Context {
+		return ctx
+	}}
 	defer server.Close()
 	go func() {
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -112,5 +114,5 @@ func TestExample_HttpRedirect(t *testing.T) {
 	}()
 
 	peerDoc := NewSharedDoc(automerge.New())
-	assertEqual(t, peerDoc.HttpPushPullChanges(context.Background(), "http://"+listener.Addr().String(), WithClientTerminationCheck(HasAllRemoteHeads)), nil)
+	assertEqual(t, peerDoc.HttpPushPullChanges(ctx, "http://"+listener.Addr().String(), WithClientTerminationCheck(HasAllRemoteHeads)), nil)
 }

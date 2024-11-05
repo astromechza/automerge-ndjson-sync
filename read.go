@@ -26,6 +26,7 @@ func (b *SharedDoc) NotifyReceivedChanges() {
 }
 
 func (b *SharedDoc) consumeMessagesFromReader(ctx context.Context, state *automerge.SyncState, reader io.Reader, readPredicate ReadPredicate, terminationCheck TerminationCheck) (int, error) {
+	log := Logger(ctx)
 	received, receivedBytes, receivedChanges := 0, 0, 0
 	defer func() {
 		log.InfoContext(ctx, "finished receiving sync messages", slog.Int("received-messages", received), slog.Int("received-changes", receivedChanges), slog.Int("received-bytes", receivedBytes))

@@ -2,31 +2,25 @@ package automergendjsonsync
 
 import (
 	"bytes"
-	"io"
+	"context"
 	"log/slog"
 
 	"github.com/automerge/automerge-go"
 )
 
-// log is a structured logger used by anything within this package.
-var log *slog.Logger
+type logContextKeyType int
 
-// init calls ResetLog to ensure that we always have the default pkg logging behavior.
-func init() {
-	ResetLog()
+var logContextKey = logContextKeyType(0)
+
+func SetContextLogger(ctx context.Context, l *slog.Logger) context.Context {
+	return context.WithValue(ctx, logContextKey, l)
 }
 
-// SetLog will set the logger used by this package. By default, it is disabled and will not log any messages.
-func SetLog(l *slog.Logger) {
-	if l == nil {
-		panic("nil logger is unacceptable")
+func Logger(ctx context.Context) *slog.Logger {
+	if v, ok := ctx.Value(logContextKey).(*slog.Logger); ok {
+		return v
 	}
-	log = l
-}
-
-// ResetLog	will set the logger back to its default value - disabled.
-func ResetLog() {
-	SetLog(slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError})))
+	return slog.Default()
 }
 
 // LoggableChangeHashes is a type alias that allows the change hash array that represents the document heads to be

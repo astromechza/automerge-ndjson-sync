@@ -77,11 +77,11 @@ func WithTerminationCheck(f TerminationCheck) ServerOption {
 
 func isNotSuitableContentType(in string) bool {
 	mt, p, err := mime.ParseMediaType(in)
-	log.Info(fmt.Sprintf("%v %v %v", mt, p, err))
 	return err != nil || mt != ContentType || (p["charset"] != "" && p["charset"] != "utf-8")
 }
 
 func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts ...ServerOption) (finalErr error) {
+	log := Logger(req.Context())
 	options := newServerOptions(opts...)
 	if options.state == nil {
 		options.state = automerge.NewSyncState(b.Doc())

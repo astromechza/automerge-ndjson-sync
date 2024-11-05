@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -76,12 +77,10 @@ func handlerWithErrors(inner func(writer http.ResponseWriter, request *http.Requ
 }
 
 func mainInner() error {
-	m := new(sync.Map)
-
-	mux := http.NewServeMux()
-
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
-	automergendjsonsync.SetLog(slog.Default())
+
+	m := new(sync.Map)
+	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{id}", handlerWithErrors(func(writer http.ResponseWriter, request *http.Request) error {
 		docId := request.PathValue("id")
@@ -108,9 +107,16 @@ func mainInner() error {
 	if err != nil {
 		return err
 	}
-	server := &http.Server{Addr: ":8080", Handler: mux, TLSConfig: &tls.Config{
-		Certificates: []tls.Certificate{*cert},
-	}}
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{*cert},
+		},
+		BaseContext: func(net.Listener) context.Context {
+			return automergendjsonsync.SetContextLogger(context.Background(), slog.Default())
+		},
+	}
 	slog.Default().Info("listening and serving")
 	return server.ListenAndServeTLS("", "")
 }
