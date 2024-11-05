@@ -54,7 +54,7 @@ func TestNotifyPossibleChanges_with_sub(t *testing.T) {
 func TestConsumeMessagesFromReader_empty(t *testing.T) {
 	t.Parallel()
 	sd := NewSharedDoc(automerge.New())
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), new(bytes.Buffer), NoTerminationCheck)
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), new(bytes.Buffer), NoReadPredicate, NoTerminationCheck)
 	assertEqual(t, err, nil)
 	assertEqual(t, n, 0)
 }
@@ -64,7 +64,7 @@ func TestConsumeMessagesFromReader_ping_message(t *testing.T) {
 	sd := NewSharedDoc(automerge.New())
 	buff := bytes.NewBuffer([]byte(`{"event": "ping"}
 `))
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoTerminationCheck)
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoReadPredicate, NoTerminationCheck)
 	assertEqual(t, err, nil)
 	assertEqual(t, n, 0)
 	assertEqual(t, buff.Len(), 0)
@@ -74,7 +74,7 @@ func TestConsumeMessagesFromReader_read_err(t *testing.T) {
 	t.Parallel()
 	sd := NewSharedDoc(automerge.New())
 	buff := iotest.ErrReader(io.ErrUnexpectedEOF)
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoTerminationCheck)
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoReadPredicate, NoTerminationCheck)
 	assertErrorEqual(t, err, "failed while scanning message 1: unexpected EOF")
 	assertEqual(t, n, 0)
 }
@@ -83,7 +83,7 @@ func TestConsumeMessagesFromReader_not_json(t *testing.T) {
 	t.Parallel()
 	sd := NewSharedDoc(automerge.New())
 	buff := bytes.NewBuffer([]byte(`bad`))
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoTerminationCheck)
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoReadPredicate, NoTerminationCheck)
 	assertErrorEqual(t, err, "failed to unmarshal message 1: invalid character 'b' looking for beginning of value")
 	assertEqual(t, n, 0)
 }
@@ -92,8 +92,8 @@ func TestConsumeMessagesFromReader_bad_data(t *testing.T) {
 	t.Parallel()
 	sd := NewSharedDoc(automerge.New())
 	buff := bytes.NewBuffer([]byte(`{"event":"sync"}`))
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoTerminationCheck)
-	assertErrorEqual(t, err, "failed to receive message 1: not enough input")
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoReadPredicate, NoTerminationCheck)
+	assertErrorEqual(t, err, "failed to load message 1: not enough input")
 	assertEqual(t, n, 0)
 }
 
@@ -113,7 +113,7 @@ func TestConsumeMessagesFromReader_termination_check(t *testing.T) {
 		}
 	}
 	called := 0
-	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
+	n, err := sd.consumeMessagesFromReader(context.Background(), automerge.NewSyncState(sd.Doc()), buff, NoReadPredicate, func(doc *automerge.Doc, m *automerge.SyncMessage) bool {
 		called += 1
 		return called >= 2
 	})

@@ -168,7 +168,7 @@ func (b *SharedDoc) HttpPushPullChanges(ctx context.Context, url string, opts ..
 		return fmt.Errorf("http request returned a response with an unsuitable content type %s", v)
 	}
 
-	if _, err := b.consumeMessagesFromReader(ctx, o.state, res.Body, o.terminationCheck); err != nil {
+	if _, err := b.consumeMessagesFromReader(ctx, o.state, res.Body, NoReadPredicate, o.terminationCheck); err != nil {
 		return err
 	}
 	return nil

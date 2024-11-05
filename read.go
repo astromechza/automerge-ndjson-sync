@@ -25,7 +25,7 @@ func (b *SharedDoc) NotifyReceivedChanges() {
 	}
 }
 
-func (b *SharedDoc) consumeMessagesFromReader(ctx context.Context, state *automerge.SyncState, reader io.Reader, terminationCheck TerminationCheck) (int, error) {
+func (b *SharedDoc) consumeMessagesFromReader(ctx context.Context, state *automerge.SyncState, reader io.Reader, readPredicate ReadPredicate, terminationCheck TerminationCheck) (int, error) {
 	received, receivedBytes, receivedChanges := 0, 0, 0
 	defer func() {
 		log.InfoContext(ctx, "finished receiving sync messages", slog.Int("received-messages", received), slog.Int("received-changes", receivedChanges), slog.Int("received-bytes", receivedBytes))
@@ -37,7 +37,13 @@ func (b *SharedDoc) consumeMessagesFromReader(ctx context.Context, state *autome
 		if err := json.Unmarshal(sc.Bytes(), &e); err != nil {
 			return received, fmt.Errorf("failed to unmarshal message %d: %w", received+1, err)
 		} else if e.Event == EventSync {
-			if m, err := state.ReceiveMessage(e.Data); err != nil {
+			if m, err := automerge.LoadSyncMessage(e.Data); err != nil {
+				return received, fmt.Errorf("failed to load message %d: %w", received+1, err)
+			} else if ok, err := readPredicate(state.Doc, m); err != nil {
+				return received, fmt.Errorf("failed to run read predicate on message %d: %w", received+1, err)
+			} else if !ok {
+				log.DebugContext(ctx, "skipping message", slog.Int("changes", len(m.Changes())), slog.Int("bytes", len(sc.Bytes())), slog.Any("heads", LoggableChangeHashes(m.Heads())))
+			} else if _, err := state.ReceiveMessage(e.Data); err != nil {
 				return received, fmt.Errorf("failed to receive message %d: %w", received+1, err)
 			} else {
 				log.DebugContext(ctx, "received message", slog.Int("changes", len(m.Changes())), slog.Int("bytes", len(sc.Bytes())), slog.Any("heads", LoggableChangeHashes(m.Heads())))

@@ -32,14 +32,19 @@ func (b *SharedDoc) Doc() *automerge.Doc {
 }
 
 type serverOptions struct {
-	state         *automerge.SyncState
-	headerEditors []func(rw http.Header)
+	state            *automerge.SyncState
+	headerEditors    []func(rw http.Header)
+	readPredicate    ReadPredicate
+	terminationCheck TerminationCheck
 }
 
 type ServerOption func(*serverOptions)
 
 func newServerOptions(opts ...ServerOption) *serverOptions {
-	options := &serverOptions{}
+	options := &serverOptions{
+		readPredicate:    NoReadPredicate,
+		terminationCheck: NoTerminationCheck,
+	}
 	for _, opt := range opts {
 		opt(options)
 	}
@@ -55,6 +60,18 @@ func WithServerSyncState(state *automerge.SyncState) ServerOption {
 func WithServerHeaderEditor(f func(headers http.Header)) ServerOption {
 	return func(o *serverOptions) {
 		o.headerEditors = append(o.headerEditors, f)
+	}
+}
+
+func WithReadPredicate(f ReadPredicate) ServerOption {
+	return func(o *serverOptions) {
+		o.readPredicate = f
+	}
+}
+
+func WithTerminationCheck(f TerminationCheck) ServerOption {
+	return func(o *serverOptions) {
+		o.terminationCheck = f
 	}
 }
 
@@ -118,7 +135,7 @@ func (b *SharedDoc) ServeChanges(rw http.ResponseWriter, req *http.Request, opts
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if received, err := b.consumeMessagesFromReader(ctx, options.state, req.Body, NoTerminationCheck); err != nil {
+		if received, err := b.consumeMessagesFromReader(ctx, options.state, req.Body, options.readPredicate, options.terminationCheck); err != nil {
 			// If we've finished and the request context is closed (indicating that the client disconnected), then this
 			// isn't really an error. For anything else, set the final error and cancel the context. The cancellation
 			// should stop the writer from producing messages and lead to closing the response.
